@@ -1,0 +1,79 @@
+{
+  "variables": {
+    "aws_access_key": "AKIAXYZXMO6XACGST2FX",
+    "aws_secret_key": "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",
+	"region": "ap-southeast-1",
+	"instance_type": "t3.micro",
+	"aws_profile": "{{env `AWS_PROFILE`}}",
+	"ssh_username": "centos",
+	"ami_name": "Mysql-Server8 {{timestamp}}",
+    "mount_file":"mount.sh",
+	"mysql_cnf":"my.cnf",
+	"mysql_install":"mysql_install.sh",
+	"mysqld_exporter":"mysql_exporter.sh"
+
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+	"profile": "{{ user `aws_profile`}}",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "{{user `region`}}",
+	"launch_block_device_mappings": [
+		{
+		   "device_name": "/dev/sda1",
+		   "volume_size": 100,
+		   "volume_type": "standard",
+		   "encrypted": false,
+		   "delete_on_termination": true
+	    },{
+			"device_name": "/dev/sda2",
+			"volume_size": 10,
+			"volume_type": "standard",
+			"encrypted": false,
+			"delete_on_termination": true
+		 }],
+	  "run_volume_tags": {
+		"Name": "volume {{user `ami_name`}}"
+	},
+    "source_ami_filter": {
+		"filters": {
+			"virtualization-type": "hvm",
+			"name": "BaseOS-Centos7.9*",
+			"root-device-type": "ebs"
+		},
+		"owners": ["self"],
+		"most_recent": true
+	},
+	"vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+	"security_group_id": "{{user `security_group_id`}}",
+	"associate_public_ip_address": "true",
+	"communicator": "ssh",
+	"ssh_username": "{{user `ssh_username`}}",
+    "instance_type": "{{user `instance_type`}}",
+    "ami_name": "{{user `ami_name`}}",
+	"tags": {
+		"Name": "{{user `ami_name`}}"
+		}
+  }],
+  "provisioners": [{
+	"type": "shell",
+	"script": "{{user `mount_file`}}"
+},{
+	"type": "file",
+	"source": "{{user `mysql_cnf`}}",
+	"destination": "/tmp/"
+},{
+	"type": "shell",
+	"inline": [
+	"sudo mv /tmp/my.cnf /etc/"
+	]
+},{
+	"type": "shell",
+	"script": "{{user `mysql_install`}}"
+},{
+	"type": "shell",
+	"script": "{{user `mysqld_exporter`}}"
+}]
+}
