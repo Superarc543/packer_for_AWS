@@ -1,0 +1,59 @@
+{
+  "variables": {
+    "aws_access_key": "AKIAXYZXMO6XACGST2FX",
+    "aws_secret_key": "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",
+	"region": "ap-southeast-1",
+	"instance_type": "t3.micro",
+	"aws_profile": "{{env `AWS_PROFILE`}}",
+	"ssh_username": "centos",
+	"ami_name": "Rabbit MQ {{timestamp}} {{isotime \"2006-01-02-15-04\"}}",
+	"install_file": "rabbitmq_install.sh"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+	"profile": "{{ user `aws_profile`}}",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "{{user `region`}}",
+	"launch_block_device_mappings": [
+		{
+		   "device_name": "/dev/sda1",
+		   "volume_size": 100,
+		   "volume_type": "standard",
+		   "encrypted": false,
+		   "delete_on_termination": true
+	    }
+	  ],
+	  "run_volume_tags": {
+		"Name": "volume {{user `ami_name`}}"
+	},
+    "source_ami_filter": {
+		"filters": {
+			"virtualization-type": "hvm",
+			"name": "BaseOS-Centos7.9*",
+			"root-device-type": "ebs"
+		},
+		"owners": ["self"],
+		"most_recent": true
+	},
+	"vpc_id": "{{user `vpc_id`}}",
+    "subnet_id": "{{user `subnet_id`}}",
+	"security_group_id": "{{user `security_group_id`}}",
+	"associate_public_ip_address": "true",
+	"communicator": "ssh",
+	"ssh_username": "{{user `ssh_username`}}",
+    "instance_type": "{{user `instance_type`}}",
+    "ami_name": "{{user `ami_name`}}",
+	"tags": {
+		"Name": "{{user `ami_name`}}"
+		}
+  }],
+  "provisioners": [{
+	"type": "shell",
+	"script": "{{user `install_file`}}"
+},{
+	"type": "shell",
+	"inline": ["sudo rabbitmqctl add_user tonwa tonwa9527",
+		"sudo rabbitmqctl set_user_tags tonwa administrator"]
+}]
+}
